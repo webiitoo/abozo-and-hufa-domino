@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>abozo &amp; hufa domino</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button id="sound-btn" class="sound-btn" title="Sound on/off" aria-label="Toggle sound">🔊</button>
+  <div id="toasts" class="toasts"></div>
+  <div id="float-layer" class="float-layer"></div>
+  <canvas id="confetti" class="confetti"></canvas>
+
+  <!-- Home -->
+  <section id="home" class="screen center">
+    <div class="logo">
+      <div class="logo-tiles" id="logo-tiles"></div>
+      <h1 class="title">abozo <span class="amp">&amp;</span> hufa</h1>
+      <p class="subtitle">DOMINO</p>
+    </div>
+
+    <div class="card">
+      <label for="name">Your name</label>
+      <input id="name" type="text" maxlength="20" autocomplete="off" placeholder="e.g. Abozo">
+
+      <button id="create-btn" class="btn primary big">🎲 Create a room</button>
+
+      <div class="divider"><span>or join your friends</span></div>
+
+      <div class="join-row">
+        <input id="join-code" type="text" maxlength="5" autocomplete="off" placeholder="ROOM CODE">
+        <button id="join-btn" class="btn secondary">Join</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lobby -->
+  <section id="lobby" class="screen center" hidden>
+    <div class="card wide">
+      <p class="eyebrow">Room code</p>
+      <div id="room-code" class="room-code"></div>
+
+      <p class="eyebrow">Send this link to your friends</p>
+      <div class="join-row">
+        <input id="share-link" type="text" readonly>
+        <button id="copy-btn" class="btn secondary">Copy</button>
+      </div>
+
+      <h3 class="section-title">Players <span id="player-count" class="pill"></span></h3>
+      <div id="lobby-players" class="lobby-seats"></div>
+
+      <button id="start-btn" class="btn primary big" hidden>▶ Start game</button>
+      <p id="lobby-wait" class="wait"></p>
+    </div>
+  </section>
+
+  <!-- Game -->
+  <section id="game" class="screen game" hidden>
+    <header class="topbar">
+      <div class="brand">abozo <span class="amp">&amp;</span> hufa</div>
+      <div id="round-info" class="round-info"></div>
+    </header>
+
+    <div id="opponents" class="opponents"></div>
+
+    <div class="table">
+      <div id="board" class="board"></div>
+      <div class="boneyard" title="Boneyard">
+        <div class="bone-stack"><span></span><span></span><span></span></div>
+        <div><strong id="boneyard-count">0</strong> left</div>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="actions">
+      <button id="draw-btn" class="btn primary" hidden>🂠 Draw a tile</button>
+      <button id="pass-btn" class="btn secondary" hidden>Pass ➜</button>
+    </div>
+
+    <div class="tray">
+      <div class="tray-head">
+        <div id="me-seat" class="me-seat"></div>
+        <div id="reactions" class="reactions"></div>
+      </div>
+      <div id="hand" class="hand"></div>
+    </div>
+
+    <details class="log-box">
+      <summary>Move history</summary>
+      <ul id="log"></ul>
+    </details>
+  </section>
+
+  <!-- Round / game result -->
+  <div id="result" class="modal" hidden>
+    <div class="modal-card">
+      <div id="result-emoji" class="result-emoji"></div>
+      <h2 id="result-title"></h2>
+      <p id="result-text" class="result-text"></p>
+      <div id="result-hands" class="result-hands"></div>
+      <button id="result-btn" class="btn primary big" hidden></button>
+      <p id="result-wait" class="wait"></p>
+    </div>
+  </div>
+
+  <!-- Chat (visible once you are in a room) -->
+  <button id="chat-btn" class="chat-btn" title="Chat" aria-label="Open chat" hidden>💬<span id="chat-badge" class="chat-badge" hidden></span></button>
+  <div id="chat-panel" class="chat-panel" hidden>
+    <div class="chat-head">
+      <strong>Room chat</strong>
+      <button id="chat-close" class="chat-close" aria-label="Close chat">✕</button>
+    </div>
+    <ul id="chat-list" class="chat-list"></ul>
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input id="chat-input" type="text" maxlength="200" placeholder="Say something…">
+      <button type="submit" class="btn primary">Send</button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="sound.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
