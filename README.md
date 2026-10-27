@@ -57,6 +57,13 @@ Friends on the same Wi-Fi can join using your computer's local IP, for example `
 
 ## Deploy for free on Render
 
+Quickest way: click the button, sign in to Render with GitHub, and press **Deploy Blueprint**.
+The settings come from `render.yaml`.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/webiitoo/abozo-and-hufa-domino)
+
+Or set it up by hand:
+
 1. Create a free account at https://github.com and a new repository, then upload all the project files
    (everything except `node_modules`). Or from the project folder:
    ```bash
