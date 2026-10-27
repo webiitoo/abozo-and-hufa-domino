@@ -283,8 +283,6 @@
   function renderBoard() {
     const board = $('board');
     board.innerHTML = '';
-    board.classList.toggle('crowded', state.board.length > 12 && state.board.length <= 20);
-    board.classList.toggle('packed', state.board.length > 20);
 
     if (!state.board.length) {
       const empty = document.createElement('div');
@@ -302,6 +300,36 @@
       board.appendChild(tileEl(t, t[0] === t[1], isNew ? 'placed' : ''));
     });
     if (pendingTile) board.appendChild(endSlot('right'));
+  }
+
+  // Pick the biggest tile size at which the whole line still fits on the table.
+  // This mirrors the CSS: a tile is 2u+6 px wide (doubles stand up: u+4 wide, 2u+6 tall).
+  function fitBoard() {
+    const board = $('board');
+    if (!state || !state.board.length || board.clientWidth === 0) return;
+    const cs = getComputedStyle(board);
+    const width = board.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const height = board.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const gap = 4;
+
+    function fits(u) {
+      let x = 0;
+      let rowH = 0;
+      let used = 0;
+      const place = (w, h) => {
+        if (x > 0 && x + w > width) { used += rowH + gap; x = 0; rowH = 0; }
+        x += w + gap;
+        rowH = Math.max(rowH, h);
+      };
+      if (pendingTile) place(2 * u + 30, u + 8);
+      state.board.forEach((t) => (t[0] === t[1] ? place(u + 4, 2 * u + 6) : place(2 * u + 6, u + 4)));
+      if (pendingTile) place(2 * u + 30, u + 8);
+      return used + rowH <= height;
+    }
+
+    let u = 56;
+    while (u > 14 && !fits(u)) u--;
+    board.style.setProperty('--u', u + 'px');
   }
 
   function renderSeats() {
@@ -495,8 +523,60 @@
     } else {
       renderGame();
       show('game');
+      fitBoard();
+    }
+    updateRotateHint();
+  }
+
+  // ---------- Wide screen (landscape) ----------
+
+  const isPhonePortrait = () => window.matchMedia('(orientation: portrait) and (max-width: 760px)').matches;
+  let rotateHintClosed = load('domino-rotate-hint') === 'closed';
+
+  function updateRotateHint() {
+    $('rotate-hint').hidden = rotateHintClosed || !state || state.phase === 'lobby' || !isPhonePortrait();
+  }
+
+  async function goWide() {
+    const el = document.documentElement;
+    const canFullscreen = !!el.requestFullscreen;
+    const canLock = !!(screen.orientation && screen.orientation.lock);
+    try {
+      if (canFullscreen && !document.fullscreenElement) await el.requestFullscreen({ navigationUI: 'hide' });
+      // Browsers only allow locking the orientation in full screen (Android Chrome, for example).
+      if (canLock && isPhonePortrait()) await screen.orientation.lock('landscape');
+    } catch (e) { /* not supported here */ }
+    if (isPhonePortrait()) toast('Turn your phone sideways 🔄 (and turn off rotation lock)');
+  }
+
+  function toggleWide() {
+    Sound.play('click');
+    if (document.fullscreenElement) {
+      if (screen.orientation && screen.orientation.unlock) {
+        try { screen.orientation.unlock(); } catch (e) { /* ignore */ }
+      }
+      document.exitFullscreen().catch(() => {});
+    } else {
+      goWide();
     }
   }
+
+  $('rotate-btn').onclick = toggleWide;
+  $('rotate-hint-btn').onclick = toggleWide;
+  $('rotate-hint-close').onclick = () => {
+    rotateHintClosed = true;
+    store('domino-rotate-hint', 'closed');
+    updateRotateHint();
+  };
+  document.addEventListener('fullscreenchange', () => {
+    $('rotate-btn').textContent = document.fullscreenElement ? '🗗' : '⛶';
+  });
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { fitBoard(); updateRotateHint(); }, 100);
+  });
 
   // ---------- Chat ----------
 
