@@ -34,12 +34,13 @@ There is no game server. It is a static site on GitHub Pages:
 
 - `public/engine.js` holds the rules and room state. It runs in the room creator's browser, checks every move
   and turn, and sends each player only their own tiles (opponents are tile counts).
-- `public/net.js` connects the players' browsers directly with WebRTC, using the free public
-  [PeerJS](https://peerjs.com) service only so the browsers can find each other.
+- `public/net.js` passes messages between the players through a free public MQTT broker
+  (EMQX, HiveMQ or Mosquitto) over secure WebSockets, which works on any network. Every message is
+  end-to-end encrypted (ECDH key exchange + AES-GCM), so the broker and anyone listening can't read the tiles.
 - `public/client.js`, `sound.js`, `style.css` and `index.html` are the game screen.
 
 Because the room creator's browser runs the game, a very determined room creator could peek at other hands
-with the browser's developer tools. Some strict networks (school or office Wi-Fi) can block direct connections.
+with the browser's developer tools.
 
 ## Files
 
@@ -50,7 +51,7 @@ abozo-and-hufa-domino/
 │   ├── index.html
 │   ├── style.css
 │   ├── engine.js                 # rules, turns, scoring, hidden hands
-│   ├── net.js                    # browser-to-browser networking (PeerJS)
+│   ├── net.js                    # encrypted networking through a public MQTT broker
 │   ├── sound.js                  # sound effects (generated in the browser)
 │   └── client.js                 # table, chat, reactions, confetti
 ├── server.js                     # tiny local test server (not needed online)
