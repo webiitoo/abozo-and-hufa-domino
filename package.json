@@ -1,7 +1,7 @@
 {
   "name": "abozo-and-hufa-domino",
-  "version": "1.0.0",
-  "description": "Classic double-six draw dominoes, multiplayer online with rooms, chat and sound.",
+  "version": "2.0.0",
+  "description": "Classic double-six draw dominoes, multiplayer online with rooms, chat and sound. Runs on GitHub Pages.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -10,7 +10,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "socket.io": "^4.8.1"
+    "express": "^4.21.2"
   }
 }

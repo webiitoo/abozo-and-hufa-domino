@@ -1,7 +1,6 @@
 'use strict';
 
 (function () {
-  const socket = io();
   const $ = (id) => document.getElementById(id);
 
   // Pip positions in a 3x3 grid (cells 0-8) for each value.
@@ -78,6 +77,7 @@
     roomId = null;
     state = null;
     store('domino-room', null);
+    Net.leave();
     $('result').hidden = true;
     $('chat-btn').hidden = true;
     $('chat-panel').hidden = true;
@@ -94,7 +94,7 @@
   }
 
   function action(name, data) {
-    socket.emit(name, data || {}, (res) => {
+    Net.emit(name, data || {}).then((res) => {
       if (res && res.error) showError(res.error);
     });
   }
@@ -141,11 +141,20 @@
 
   // ---------- Home ----------
 
+  function setBusy(busy, text) {
+    $('create-btn').disabled = busy;
+    $('join-btn').disabled = busy;
+    $('home-busy').hidden = !busy;
+    $('home-busy').textContent = text || '';
+  }
+
   $('create-btn').onclick = () => {
     const name = readName();
     if (!name) return;
     Sound.play('click');
-    socket.emit('createRoom', { name, token }, (res) => {
+    setBusy(true, 'Creating your room…');
+    Net.createRoom({ name, token }).then((res) => {
+      setBusy(false);
       if (res.error) return showError(res.error);
       enterRoom(res.roomId);
     });
@@ -157,7 +166,9 @@
     const code = $('join-code').value.trim().toUpperCase();
     if (!code) return showError('Please enter a room code.');
     Sound.play('click');
-    socket.emit('joinRoom', { roomId: code, name, token }, (res) => {
+    setBusy(true, 'Connecting to the room…');
+    Net.joinRoom({ roomId: code, name, token }).then((res) => {
+      setBusy(false);
       if (res.error) return showError(res.error);
       enterRoom(res.roomId);
     });
@@ -214,7 +225,8 @@
     $('start-btn').hidden = !amHost;
     $('start-btn').disabled = state.players.length < 2;
     $('lobby-wait').textContent = amHost
-      ? (state.players.length < 2 ? 'You need at least one friend to start.' : 'Everyone in? Press start!')
+      ? (state.players.length < 2 ? 'You need at least one friend to start.' : 'Everyone in? Press start!') +
+        ' Keep this tab open: the game runs on your device.'
       : 'Waiting for the host to start the game…';
   }
 
@@ -232,7 +244,7 @@
       const b = document.createElement('button');
       b.textContent = emoji;
       b.title = 'Send ' + emoji;
-      b.onclick = () => socket.emit('react', emoji);
+      b.onclick = () => Net.emit('react', emoji);
       $('reactions').appendChild(b);
     });
   }
@@ -509,7 +521,7 @@
     e.preventDefault();
     const text = $('chat-input').value.trim();
     if (!text) return;
-    socket.emit('chat', text);
+    Net.emit('chat', text);
     $('chat-input').value = '';
   };
 
@@ -618,7 +630,7 @@
   }
 
   // Emoji reactions float up from the sender's seat.
-  socket.on('reaction', ({ by, emoji }) => {
+  Net.on('reaction', ({ by, emoji }) => {
     if (!state) return;
     Sound.play('pop');
     const anchor = document.querySelector(`[data-seat="${by}"]`);
@@ -676,20 +688,30 @@
     })(start);
   }
 
-  // ---------- Socket ----------
+  // ---------- Network ----------
 
-  socket.on('connect', () => {
-    // Rejoin our seat after a refresh or a dropped connection.
-    if (roomId && myName) {
-      socket.emit('joinRoom', { roomId, name: myName, token }, (res) => {
-        if (res.error) leaveToHome(res.error);
-      });
+  Net.on('disconnect', () => { if (state) toast('Connection lost, reconnecting…', 'error'); });
+  Net.on('reconnect', () => toast('Reconnected 👍'));
+  Net.on('roomGone', (msg) => leaveToHome(msg));
+
+  // The game runs in the host's browser, so closing that tab ends it for everyone.
+  window.addEventListener('beforeunload', (e) => {
+    if (Net.isHost && state && state.players.length > 1) {
+      e.preventDefault();
+      e.returnValue = '';
     }
   });
 
-  socket.on('disconnect', () => { if (state) toast('Connection lost, reconnecting…', 'error'); });
+  // Rejoin our seat after a page refresh.
+  if (roomId && myName) {
+    setBusy(true, 'Reconnecting to your room…');
+    Net.joinRoom({ roomId, name: myName, token }).then((res) => {
+      setBusy(false);
+      if (res.error) leaveToHome(res.error);
+    });
+  }
 
-  socket.on('state', (s) => {
+  Net.on('state', (s) => {
     const prev = state;
     const newRoom = !prev || prev.roomId !== s.roomId;
     if (newRoom) animatedSeq = 0;

@@ -2,37 +2,60 @@
 
 Classic double-six **Draw dominoes** for 2–4 players, played online in real time.
 
+**Play:** https://webiitoo.github.io/abozo-and-hufa-domino/
+
 Extras for fun: sound effects, animated tiles, confetti when you win, emoji reactions and a room chat.
 Sound can be muted with the 🔊 button (top right). Chat is the 💬 button (bottom right).
 
-## Files
+## How to play with friends
 
-```
-abozo-and-hufa-domino/
-├── package.json        # dependencies and start script
-├── server.js           # Express + Socket.io server, all game logic
-├── .gitignore
-└── public/
-    ├── index.html      # page layout
-    ├── style.css       # design and animations
-    ├── sound.js        # sound effects (generated in the browser, no audio files)
-    └── client.js       # browser code: table, chat, reactions, confetti
-```
+1. Open the game link, type your name and click **Create a room**.
+2. Send the room link to your friends (the **Copy** button). They open it, type a name and click **Join**.
+3. When everyone is in, the room creator presses **Start game**.
+
+The game runs in the room creator's browser, so **the creator must keep their tab open** until you finish.
+Refreshing the page is fine for anyone: the game comes back and friends reconnect automatically.
 
 ## Rules (standard Draw game)
 
-- 28 tiles (double-six set), shuffled by the server.
+- 28 tiles (double-six set), shuffled at the start of each round.
 - 2 players get 7 tiles each; 3 or 4 players get 5 tiles each. The rest form the boneyard.
 - Round 1: the player holding the highest double opens with it (if nobody has a double, the heaviest tile opens).
   Later rounds: the winner of the previous round leads with any tile.
 - Play goes in turn order. A tile must match the number on one open end of the line.
 - If you cannot play, you must draw from the boneyard until you can. If the boneyard is empty, you pass.
-- The round ends when a player plays their last tile ("domino"), or when the game is blocked (everyone passes in a row).
+- The round ends when a player plays their last tile, or when the game is blocked (everyone passes in a row).
   In a blocked game the player with the lowest pip count wins; a tie scores nothing.
 - The round winner scores the total pips left in all opponents' hands. First to 100 points wins the game.
 
-The server shuffles, deals, validates every move and enforces turns. Each player only ever receives
-their own tiles; opponents are shown as tile counts. Hands are revealed only after a round ends, for scoring.
+## How it works
+
+There is no game server. It is a static site on GitHub Pages:
+
+- `public/engine.js` holds the rules and room state. It runs in the room creator's browser, checks every move
+  and turn, and sends each player only their own tiles (opponents are tile counts).
+- `public/net.js` connects the players' browsers directly with WebRTC, using the free public
+  [PeerJS](https://peerjs.com) service only so the browsers can find each other.
+- `public/client.js`, `sound.js`, `style.css` and `index.html` are the game screen.
+
+Because the room creator's browser runs the game, a very determined room creator could peek at other hands
+with the browser's developer tools. Some strict networks (school or office Wi-Fi) can block direct connections.
+
+## Files
+
+```
+abozo-and-hufa-domino/
+├── .github/workflows/pages.yml   # publishes public/ to GitHub Pages on every push
+├── public/
+│   ├── index.html
+│   ├── style.css
+│   ├── engine.js                 # rules, turns, scoring, hidden hands
+│   ├── net.js                    # browser-to-browser networking (PeerJS)
+│   ├── sound.js                  # sound effects (generated in the browser)
+│   └── client.js                 # table, chat, reactions, confetti
+├── server.js                     # tiny local test server (not needed online)
+└── package.json
+```
 
 ## Run locally
 
@@ -41,59 +64,14 @@ their own tiles; opponents are shown as tile counts. Hands are revealed only aft
    ```bash
    cd "C:\Users\ABDELRAHMAN\OneDrive\Documents\domino-game\abozo-and-hufa-domino"
    ```
-3. Install dependencies:
+3. Install and start:
    ```bash
    npm install
-   ```
-4. Start the server:
-   ```bash
    npm start
    ```
-5. Open http://localhost:3000, type a name and click **Create room**.
-6. To test alone, open the share link in a second browser tab (each tab is a separate player), join, then click **Start game** in the first tab.
+4. Open http://localhost:3000. Open the room link in a second tab to test with two players.
 
-Friends on the same Wi-Fi can join using your computer's local IP, for example `http://192.168.1.20:3000/?room=ABCDE`
-(find your IP with `ipconfig` on Windows). For play over the internet, deploy it as below.
+## Publishing
 
-## Deploy for free on Render
-
-Quickest way: click the button, sign in to Render with GitHub, and press **Deploy Blueprint**.
-The settings come from `render.yaml`.
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/webiitoo/abozo-and-hufa-domino)
-
-Or set it up by hand:
-
-1. Create a free account at https://github.com and a new repository, then upload all the project files
-   (everything except `node_modules`). Or from the project folder:
-   ```bash
-   git init
-   git add .
-   git commit -m "abozo and hufa domino"
-   git branch -M main
-   git remote add origin https://github.com/YOUR-USERNAME/abozo-and-hufa-domino.git
-   git push -u origin main
-   ```
-2. Create a free account at https://render.com and sign in with GitHub.
-3. Click **New +** → **Web Service** and select your repository.
-4. Fill in:
-   - **Runtime:** Node
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-   - **Instance Type:** Free
-5. Click **Create Web Service**. After a few minutes you get a URL such as `https://abozo-and-hufa-domino.onrender.com`.
-6. Open the URL, create a room, and send the share link to your friends.
-
-Notes for the free tier:
-- The server sleeps after about 15 minutes without visitors; the first visit after that takes up to a minute to wake it.
-- Rooms are kept in memory, so a restart or sleep clears them. Just create a new room.
-- Render sets the `PORT` variable itself; `server.js` already reads it.
-
-About Glitch: Glitch stopped hosting projects in July 2025, so it can no longer be used. Other free options that
-work the same way (Node web service with WebSockets) are Railway and Koyeb: use `npm install` to build and `npm start` to run.
-
-## Notes
-
-- A refresh or short connection drop keeps your seat; the page rejoins automatically.
-- If a player leaves in the middle of a round, the game waits for them on their turn.
-- Rooms with nobody connected are removed after 10 minutes.
+Every push to `main` publishes `public/` to GitHub Pages through the workflow in `.github/workflows/pages.yml`.
+GitHub Pages must be enabled once in the repository: **Settings → Pages → Source: GitHub Actions**.

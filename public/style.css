@@ -167,6 +167,7 @@ input[type="text"]:focus { border-color: var(--blue); }
 .lobby-seat.empty { border: 2px dashed #d5dbe8; background: transparent; color: #a0a8ba; font-weight: 600; }
 .lobby-seat small { display: block; color: var(--muted); font-weight: 600; }
 .wait { text-align: center; color: var(--muted); margin: 14px 0 0; }
+.wait.busy { font-weight: 700; color: var(--blue); animation: glow .8s ease-in-out infinite alternate; }
 
 .avatar {
   flex: none;
